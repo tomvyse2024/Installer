@@ -275,156 +275,90 @@ function displayWeather(data) {
 }
 
 // ===============================
-// CREATE BURMESE SPEECH
-// ===============================
-
-function createSpeech(data) {
-    const current = data.current;
-    const daily = data.daily;
-
-    const weather = weatherTypes[current.weather_code] ||
-        ["ရာသီဥတု သာယာနေပါတယ်", "🌤️"];
-
-    const temperature = Math.round(current.temperature_2m);
-    const humidity = current.relative_humidity_2m;
-    const wind = Math.round(current.wind_speed_10m);
-    const rain = current.precipitation_probability ?? 0;
-    const max = Math.round(daily.temperature_2m_max[0]);
-    const min = Math.round(daily.temperature_2m_min[0]);
-
-    let advice = "";
-
-    if (rain >= 60) {
-        advice =
-            "ဒီနေ့ မိုးရွာနိုင်ခြေများတဲ့အတွက် အပြင်သွားမယ်ဆိုရင် ထီးဆောင်သွားဖို့ မမေ့နဲ့နော်။";
-    } else if (temperature >= 35) {
-        advice =
-            "ဒီနေ့ ရာသီဥတုပူနိုင်လို့ ရေများများသောက်ပေးပါနော်။";
-    } else if (temperature <= 18) {
-        advice =
-            "ဒီနေ့ အေးတဲ့အတွက် အပြင်ထွက်ရင် အနွေးထည်လေး ဝတ်သွားပါနော်။";
-    } else {
-        advice =
-            "ဒီနေ့လည်း ကိုယ့်အလုပ်တွေ အဆင်ပြေပါစေနော်။";
-    }
-
-    speechMessage =
-        `မင်္ဂလာနံနက်ခင်းပါ ကိုရဲသူရ။ ` +
-        `ဒီနေ့ ${currentCity} မှာ ရာသီဥတုက ${weather[0]}။ ` +
-        `လက်ရှိအပူချိန်က ${temperature} ဒီဂရီစင်တီဂရိတ်ရှိပါတယ်။ ` +
-        `အမြင့်ဆုံးအပူချိန်က ${max} ဒီဂရီ၊ ` +
-        `အနိမ့်ဆုံးက ${min} ဒီဂရီရှိပါမယ်။ ` +
-        `စိုထိုင်းဆ ${humidity} ရာခိုင်နှုန်းရှိပြီး ` +
-        `လေတိုက်နှုန်းက တစ်နာရီကို ${wind} ကီလိုမီတာရှိပါတယ်။ ` +
-        `မိုးရွာနိုင်ခြေက ${rain} ရာခိုင်နှုန်းပါ။ ` +
-        `${advice} ` +
-        `ကဲ ဒီနေ့လည်း အဆင်ပြေတဲ့နေ့လေးဖြစ်ပါစေ ကိုရဲသူရ။`;
-
-    document.getElementById("speechText").textContent =
-        speechMessage;
+// CREATE NATURAL BURMESE SPEECH
+function toMyanmarNumber(value) {
+    return String(value).replace(/[0-9]/g, d => "၀၁၂၃၄၅၆၇၈၉"[d]);
 }
 
-// ===============================
-// VOICE ENGINE
-// ===============================
+function createSpeech(data) {
+    const c = data.current, d = data.daily;
+    const weather = weatherTypes[c.weather_code] || ["ရာသီဥတု သာယာနေပါတယ်", "🌤️"];
+    const temp = toMyanmarNumber(Math.round(c.temperature_2m));
+    const humidity = toMyanmarNumber(c.relative_humidity_2m);
+    const wind = toMyanmarNumber(Math.round(c.wind_speed_10m));
+    const rain = toMyanmarNumber(c.precipitation_probability ?? 0);
+    const max = toMyanmarNumber(Math.round(d.temperature_2m_max[0]));
+    const min = toMyanmarNumber(Math.round(d.temperature_2m_min[0]));
+    let advice = c.precipitation_probability >= 60
+        ? "မိုးရွာနိုင်ခြေများတဲ့အတွက် အပြင်သွားမယ်ဆိုရင် ထီးဆောင်သွားဖို့ မမေ့ပါနဲ့ရှင်။"
+        : c.temperature_2m >= 35
+        ? "ရာသီဥတုပူနိုင်လို့ ရေများများသောက်ပြီး အပူဒဏ်ကို ဂရုစိုက်ပေးပါရှင်။"
+        : c.temperature_2m <= 18
+        ? "ရာသီဥတုအေးတဲ့အတွက် အပြင်ထွက်ရင် အနွေးထည်လေးဝတ်သွားဖို့ အကြံပြုပါတယ်ရှင်။"
+        : "ဒီနေ့လည်း ရာသီဥတုကို အဆင်ပြေပြေ ဖြတ်သန်းနိုင်ပါစေရှင်။";
 
+    speechMessage = `မင်္ဂလာနံနက်ခင်းပါရှင်။ ${currentCity} မြို့အတွက် ဒီနေ့ မိုးလေဝသခန့်မှန်းချက်ကတော့ ${weather[0]}။ လက်ရှိအပူချိန်က ${temp} ဒီဂရီစင်တီဂရိတ်ရှိပါတယ်ရှင်။ ဒီနေ့ အမြင့်ဆုံးအပူချိန်က ${max} ဒီဂရီနဲ့ အနိမ့်ဆုံးအပူချိန်က ${min} ဒီဂရီရှိနိုင်ပါတယ်ရှင်။ လေထုစိုထိုင်းဆက ${humidity} ရာခိုင်နှုန်းရှိပြီး လေတိုက်နှုန်းက တစ်နာရီကို ${wind} ကီလိုမီတာဖြစ်ပါတယ်ရှင်။ မိုးရွာနိုင်ခြေက ${rain} ရာခိုင်နှုန်းရှိပါတယ်ရှင်။ ${advice} အားလုံးပဲ ဒီနေ့တစ်နေ့တာကို ပျော်ရွှင်အေးချမ်းစွာ ဖြတ်သန်းနိုင်ကြပါစေရှင်။`;
+    document.getElementById("speechText").textContent = speechMessage;
+}
+
+// VOICE ENGINE: refuse to fall back to English
 function speakWeather() {
     if (!weatherLoaded || !speechMessage) {
-        showStatus("Weather ရယူနေဆဲပါ");
+        showStatus("မိုးလေဝသ အချက်အလက်ရယူနေဆဲပါရှင်။");
         return;
     }
-
     if (!window.speechSynthesis) {
-        showStatus("ဒီ Browser မှာ Voice အသုံးပြုလို့မရပါ");
+        showStatus("ဒီ Browser မှာ အသံထွက်စနစ် မရနိုင်ပါရှင်။");
         return;
     }
-
+    const voice = window.speechSynthesis.getVoices().find(v =>
+        v.lang && v.lang.toLowerCase().startsWith("my")
+    );
+    if (!voice) {
+        showStatus("ဒီ Device မှာ မြန်မာအသံ TTS မရှိပါ။ English အသံဖြင့် မဖတ်ပါ။");
+        return;
+    }
     window.speechSynthesis.cancel();
-
     const utterance = new SpeechSynthesisUtterance(speechMessage);
-
-    utterance.lang = "my-MM";
+    utterance.voice = voice;
+    utterance.lang = voice.lang || "my-MM";
     utterance.rate = 0.88;
     utterance.pitch = 1;
     utterance.volume = 1;
-
-    const voices = window.speechSynthesis.getVoices();
-
-    const myanmarVoice = voices.find(voice =>
-        voice.lang.toLowerCase().startsWith("my")
-    );
-
-    if (myanmarVoice) {
-        utterance.voice = myanmarVoice;
-    }
-
-    utterance.onstart = () => {
-        showStatus("မနက်ခင်း Weather ကို ပြောနေပါသည်...");
+    utterance.onstart = () => showStatus("မိုးလေဝသအကြောင်း ပြောနေပါသည်ရှင်။");
+    utterance.onend = () => showStatus("မိုးလေဝသ အသံဖတ်ခြင်း ပြီးဆုံးပါပြီရှင်။");
+    utterance.onerror = e => {
+        console.error(e);
+        showStatus("အသံဖွင့်ရာတွင် အမှားဖြစ်နေပါသည်ရှင်။");
     };
-
-    utterance.onend = () => {
-        showStatus("Weather အသံပြီးဆုံးပါပြီ");
-    };
-
-    utterance.onerror = event => {
-        console.log("Speech error:", event);
-        showStatus("အသံဖွင့်ရန် တစ်ချက်နှိပ်ပေးပါ");
-    };
-
     window.speechSynthesis.speak(utterance);
 }
 
-// ===============================
 // AUTOPLAY ATTEMPT
 // ===============================
 
 function tryAutoSpeak() {
     if (!weatherLoaded || !speechMessage) return;
-
-    if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-    }
-
-    speakWeather();
+    showStatus("အသံအလိုအလျောက်ဖွင့်ရန် Browser က တားထားနိုင်ပါသည်။ စာမျက်နှာကို တစ်ချက်နှိပ်ပါရှင်။");
 }
 
 // ===============================
-// AUTOPLAY FALLBACK
-// ===============================
-
-// If browser blocks autoplay, the first interaction
-// anywhere on the page will start the voice.
-
+// First non-control interaction may unlock browser speech.
 function unlockVoice() {
     if (speechUnlocked) return;
-
     speechUnlocked = true;
-
-    if (weatherLoaded && speechMessage) {
-        speakWeather();
-    }
+    if (weatherLoaded && speechMessage) speakWeather();
 }
-
-document.addEventListener("click", event => {
-    if (
-        event.target.closest("#speakBtn") ||
-        event.target.closest("#stopBtn") ||
-        event.target.closest("#searchBtn") ||
-        event.target.closest("#gpsBtn")
-    ) {
-        return;
-    }
-
+document.addEventListener("pointerdown", event => {
+    if (event.target.closest("button, input")) return;
     unlockVoice();
 }, { once: true });
 
-document.addEventListener("keydown", () => {
-    if (!speechUnlocked && weatherLoaded) {
-        unlockVoice();
-    }
-}, { once: true });
+document.getElementById("speakBtn").addEventListener("click", () => {
+    speechUnlocked = true;
+    speakWeather();
+});
 
-// ===============================
 // STOP VOICE
 // ===============================
 
