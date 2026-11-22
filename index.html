@@ -1,25 +1,140 @@
-# မိုးလေဝသ — မြန်မာလိုပြောပြမယ်
 
-တည်နေရာအလိုက် လက်ရှိရာသီဥတုနှင့် ၅ ရက်စာ ခန့်မှန်းချက်ကို ပြသပြီး မြန်မာလို အသံထွက်ဖတ်ပေးသည့် ရိုးရှင်းသော website ဖြစ်ပါတယ်။ HTML, CSS, JavaScript သာ အသုံးပြုထားပြီး API key မလိုပါ။
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#101827">
+    <title>Morning Weather Assistant</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-## ဖွင့်အသုံးပြုရန်
+    <main class="app">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-icon">☀</div>
+                <div>
+                    <h1>Morning Assistant</h1>
+                    <p>Your personal weather companion</p>
+                </div>
+            </div>
+            <div class="live-status">
+                <span class="live-dot"></span>
+                LIVE
+            </div>
+        </header>
 
-`index.html` ကို browser တွင်ဖွင့်ပါ။ တည်နေရာခွင့်ပြုချက်တောင်းလာလျှင် ခွင့်ပြုပေးပါ။ တည်နေရာမပေးလိုပါက မြို့အမည်ကို အင်္ဂလိပ်လို ရိုက်ရှာနိုင်ပါတယ်။
+        <section class="welcome">
+            <p id="greeting">မင်္ဂလာပါ</p>
+            <h2>မင်္ဂလာနံနက်ခင်းပါ ကိုရဲသူရ</h2>
+            <p id="currentDate">Loading date...</p>
+            <div class="clock" id="clock">--:--:--</div>
+        </section>
 
-တည်နေရာရှာဖွေမှုကို browser အများစုက HTTPS သို့မဟုတ် localhost တွင်သာ ခွင့်ပြုသောကြောင့် website ကို GitHub Pages ကဲ့သို့ HTTPS hosting တွင်တင်ရန် အကြံပြုပါတယ်။
+        <section class="weather-card">
+            <div class="weather-top">
+                <div>
+                    <p class="small-label">YOUR LOCATION</p>
+                    <h2 id="location">Location ရယူနေသည်...</h2>
+                    <p id="weatherDescription">Weather ရယူနေသည်...</p>
+                </div>
+                <div class="weather-icon" id="weatherIcon">🌤️</div>
+            </div>
 
-## အသံဖတ်ခြင်း
+            <div class="temperature">
+                <span id="temperature">--</span>
+                <span class="degree">°C</span>
+            </div>
 
-စာမျက်နှာဖွင့်ပြီး ရာသီဥတုအချက်အလက်ရလာသည်နှင့် မြန်မာလို အလိုအလျောက်ဖတ်ရန် ကြိုးစားပါတယ်။ Browser များ၏ autoplay ကန့်သတ်ချက်ကြောင့် အလိုအလျောက်အသံကို ပိတ်ထားနိုင်သည်။ ထိုအခါ **အသံဖြင့် ပြန်ပြောပါ** ခလုတ်ကို နှိပ်ပါ။ မြန်မာအသံထွက်အရည်အသွေးနှင့် ရရှိနိုင်မှုသည် အသုံးပြုသည့် browser နှင့် စက်ပေါ်မူတည်ပါတယ်။
+            <div class="weather-details">
+                <div class="detail">
+                    <span>💧</span>
+                    <div>
+                        <p>စိုထိုင်းဆ</p>
+                        <strong id="humidity">--%</strong>
+                    </div>
+                </div>
 
-## အသုံးပြုသော ဝန်ဆောင်မှုများ
+                <div class="detail">
+                    <span>💨</span>
+                    <div>
+                        <p>လေတိုက်နှုန်း</p>
+                        <strong id="wind">-- km/h</strong>
+                    </div>
+                </div>
 
-- [Open-Meteo](https://open-meteo.com/) — ရာသီဥတုနှင့် မြို့ရှာဖွေမှု
-- [BigDataCloud](https://www.bigdatacloud.com/) — တည်နေရာမှ မြို့အမည်ရှာဖွေမှု
-- Browser Web Speech API — အသံဖတ်ခြင်း
+                <div class="detail">
+                    <span>🌧️</span>
+                    <div>
+                        <p>မိုးရွာနိုင်ခြေ</p>
+                        <strong id="rain">--%</strong>
+                    </div>
+                </div>
+            </div>
 
-## ဖိုင်များ
+            <div class="forecast">
+                <div>
+                    <span>အမြင့်ဆုံး</span>
+                    <strong id="maxTemp">--°</strong>
+                </div>
+                <div>
+                    <span>အနိမ့်ဆုံး</span>
+                    <strong id="minTemp">--°</strong>
+                </div>
+                <div>
+                    <span>ခံစားရသောအပူချိန်</span>
+                    <strong id="feelsLike">--°</strong>
+                </div>
+            </div>
 
-- `index.html` — စာမျက်နှာဖွဲ့စည်းပုံ
-- `styles.css` — ဒီဇိုင်းနှင့် responsive layout
-- `app.js` — တည်နေရာ၊ API၊ ခန့်မှန်းချက်နှင့် အသံဖတ်ခြင်း
+            <p class="updated" id="updated">Weather data မရသေးပါ</p>
+        </section>
+
+        <section class="voice-card">
+            <div class="voice-heading">
+                <div>
+                    <p class="small-label">MORNING VOICE</p>
+                    <h3>မနက်ခင်း သတင်းတို</h3>
+                </div>
+                <span class="voice-icon">🎙️</span>
+            </div>
+
+            <p id="speechText">
+                Weather အချက်အလက်များကို ရယူနေပါသည်...
+            </p>
+
+            <div class="voice-actions">
+                <button id="speakBtn" class="primary-btn">
+                    ▶ အသံနားထောင်မယ်
+                </button>
+                <button id="stopBtn" class="secondary-btn">
+                    ■ ရပ်မယ်
+                </button>
+            </div>
+        </section>
+
+        <section class="location-settings">
+            <h3>📍 Location ပြောင်းရန်</h3>
+            <div class="location-input">
+                <input
+                    type="text"
+                    id="cityInput"
+                    placeholder="ဥပမာ - Mandalay, Yangon"
+                >
+                <button id="searchBtn">ရှာမယ်</button>
+            </div>
+            <button id="gpsBtn" class="gps-btn">
+                ◎ လက်ရှိနေရာ ပြန်ယူမယ်
+            </button>
+        </section>
+
+        <footer>
+            <p>Made with ♥ for your better mornings</p>
+            <p>Weather data by Open-Meteo</p>
+        </footer>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
