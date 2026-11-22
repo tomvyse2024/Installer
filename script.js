@@ -7,9 +7,11 @@ const API = {
 
 let weatherData = null;
 let currentCity = "သင့်တည်နေရာ";
-let currentSpeech = null;
+let speechMessage = "";
+let weatherLoaded = false;
+let autoSpeakAttempted = false;
+let speechUnlocked = false;
 
-// Weather codes
 const weatherTypes = {
     0: ["ကောင်းကင်ကြည်လင်နေပါတယ်", "☀️"],
     1: ["အနည်းငယ်သာ တိမ်ရှိပါတယ်", "🌤️"],
@@ -34,7 +36,10 @@ const weatherTypes = {
     99: ["မိုးသီးမုန်တိုင်း ဖြစ်နိုင်ပါတယ်", "⛈️"]
 };
 
-// Clock and date
+// ===============================
+// CLOCK
+// ===============================
+
 function updateClock() {
     const now = new Date();
 
@@ -79,10 +84,13 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
-// Get current location
+// ===============================
+// LOCATION
+// ===============================
+
 function getLocation() {
     if (!navigator.geolocation) {
-        alert("ဒီ Browser မှာ GPS အသုံးပြုလို့မရပါ။");
+        showStatus("GPS အသုံးပြုလို့မရပါ");
         return;
     }
 
@@ -90,7 +98,7 @@ function getLocation() {
         "Location ရယူနေသည်...";
 
     navigator.geolocation.getCurrentPosition(
-        async (position) => {
+        async position => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
 
@@ -99,20 +107,16 @@ function getLocation() {
                 await getWeather(lat, lon);
             } catch (error) {
                 console.error(error);
-                document.getElementById("location").textContent =
-                    "Location ရယူမရပါ";
+                showStatus("Weather ရယူရာတွင် အမှားဖြစ်နေပါသည်");
             }
         },
-        (error) => {
+        error => {
             console.error(error);
 
             document.getElementById("location").textContent =
                 "Location ခွင့်ပြုချက်လိုအပ်ပါသည်";
 
-            alert(
-                "Location Permission ကို Allow ပေးပါ။ " +
-                "သို့မဟုတ် မြို့နာမည်ကို ကိုယ်တိုင်ရှာနိုင်ပါတယ်။"
-            );
+            showStatus("GPS ကို Allow ပေးပါ သို့မဟုတ် မြို့ကိုကိုယ်တိုင်ရှာပါ");
         },
         {
             enableHighAccuracy: false,
@@ -122,7 +126,10 @@ function getLocation() {
     );
 }
 
-// Get city name from GPS coordinates
+// ===============================
+// REVERSE GEOCODING
+// ===============================
+
 async function getCityName(lat, lon) {
     const url =
         `${API.reverse}?latitude=${lat}&longitude=${lon}&localityLanguage=my`;
@@ -130,7 +137,7 @@ async function getCityName(lat, lon) {
     const response = await fetch(url);
 
     if (!response.ok) {
-        throw new Error("City lookup failed");
+        throw new Error("Reverse geocoding failed");
     }
 
     const data = await response.json();
@@ -144,12 +151,15 @@ async function getCityName(lat, lon) {
     document.getElementById("location").textContent = currentCity;
 }
 
-// Search city manually
+// ===============================
+// SEARCH CITY
+// ===============================
+
 async function searchCity() {
     const city = document.getElementById("cityInput").value.trim();
 
     if (!city) {
-        alert("မြို့နာမည်ထည့်ပေးပါ။");
+        alert("မြို့နာမည်ထည့်ပေးပါ");
         return;
     }
 
@@ -161,15 +171,10 @@ async function searchCity() {
             `${API.geocoding}?name=${encodeURIComponent(city)}&count=1&language=my&format=json`;
 
         const response = await fetch(url);
-
-        if (!response.ok) {
-            throw new Error("Search failed");
-        }
-
         const data = await response.json();
 
         if (!data.results || data.results.length === 0) {
-            alert("ဒီမြို့နာမည်ကို ရှာမတွေ့ပါ။");
+            alert("ဒီမြို့နာမည်ကို ရှာမတွေ့ပါ");
             return;
         }
 
@@ -184,11 +189,14 @@ async function searchCity() {
 
     } catch (error) {
         console.error(error);
-        alert("မြို့ရှာရာမှာ အမှားတစ်ခုဖြစ်နေပါတယ်။");
+        alert("မြို့ရှာရာမှာ အမှားတစ်ခုဖြစ်နေပါတယ်");
     }
 }
 
-// Get weather
+// ===============================
+// WEATHER
+// ===============================
+
 async function getWeather(lat, lon) {
     const url =
         `${API.weather}?latitude=${lat}` +
@@ -206,18 +214,30 @@ async function getWeather(lat, lon) {
     const data = await response.json();
 
     weatherData = data;
+    weatherLoaded = true;
 
     displayWeather(data);
     createSpeech(data);
+
+    // Auto speak after Weather data loads
+    if (!autoSpeakAttempted) {
+        autoSpeakAttempted = true;
+
+        setTimeout(() => {
+            tryAutoSpeak();
+        }, 1800);
+    }
 }
 
-// Display weather
+// ===============================
+// DISPLAY WEATHER
+// ===============================
+
 function displayWeather(data) {
     const current = data.current;
     const daily = data.daily;
 
-    const code = current.weather_code;
-    const weather = weatherTypes[code] ||
+    const weather = weatherTypes[current.weather_code] ||
         ["ရာသီဥတု အခြေအနေ မသိရသေးပါ", "🌤️"];
 
     document.getElementById("temperature").textContent =
@@ -235,10 +255,8 @@ function displayWeather(data) {
     document.getElementById("wind").textContent =
         current.wind_speed_10m + " km/h";
 
-    const rainChance = current.precipitation_probability;
-
     document.getElementById("rain").textContent =
-        (rainChance ?? 0) + "%";
+        (current.precipitation_probability ?? 0) + "%";
 
     document.getElementById("maxTemp").textContent =
         Math.round(daily.temperature_2m_max[0]) + "°C";
@@ -256,13 +274,15 @@ function displayWeather(data) {
         });
 }
 
-// Create natural Burmese speech
+// ===============================
+// CREATE BURMESE SPEECH
+// ===============================
+
 function createSpeech(data) {
     const current = data.current;
     const daily = data.daily;
 
-    const code = current.weather_code;
-    const weather = weatherTypes[code] ||
+    const weather = weatherTypes[current.weather_code] ||
         ["ရာသီဥတု သာယာနေပါတယ်", "🌤️"];
 
     const temperature = Math.round(current.temperature_2m);
@@ -275,16 +295,20 @@ function createSpeech(data) {
     let advice = "";
 
     if (rain >= 60) {
-        advice = "ဒီနေ့ မိုးရွာနိုင်ခြေများတဲ့အတွက် အပြင်သွားမယ်ဆိုရင် ထီးဆောင်သွားဖို့ မမေ့နဲ့နော်။";
+        advice =
+            "ဒီနေ့ မိုးရွာနိုင်ခြေများတဲ့အတွက် အပြင်သွားမယ်ဆိုရင် ထီးဆောင်သွားဖို့ မမေ့နဲ့နော်။";
     } else if (temperature >= 35) {
-        advice = "ဒီနေ့ ရာသီဥတုပူနိုင်လို့ ရေများများသောက်ပေးပါနော်။";
+        advice =
+            "ဒီနေ့ ရာသီဥတုပူနိုင်လို့ ရေများများသောက်ပေးပါနော်။";
     } else if (temperature <= 18) {
-        advice = "ဒီနေ့ အေးတဲ့အတွက် အပြင်ထွက်ရင် အနွေးထည်လေး ဝတ်သွားပါနော်။";
+        advice =
+            "ဒီနေ့ အေးတဲ့အတွက် အပြင်ထွက်ရင် အနွေးထည်လေး ဝတ်သွားပါနော်။";
     } else {
-        advice = "ဒီနေ့လည်း ကိုယ့်အလုပ်တွေ အဆင်ပြေပါစေနော်။";
+        advice =
+            "ဒီနေ့လည်း ကိုယ့်အလုပ်တွေ အဆင်ပြေပါစေနော်။";
     }
 
-    const message =
+    speechMessage =
         `မင်္ဂလာနံနက်ခင်းပါ ကိုရဲသူရ။ ` +
         `ဒီနေ့ ${currentCity} မှာ ရာသီဥတုက ${weather[0]}။ ` +
         `လက်ရှိအပူချိန်က ${temperature} ဒီဂရီစင်တီဂရိတ်ရှိပါတယ်။ ` +
@@ -296,31 +320,33 @@ function createSpeech(data) {
         `${advice} ` +
         `ကဲ ဒီနေ့လည်း အဆင်ပြေတဲ့နေ့လေးဖြစ်ပါစေ ကိုရဲသူရ။`;
 
-    document.getElementById("speechText").textContent = message;
+    document.getElementById("speechText").textContent =
+        speechMessage;
 }
 
-// Speak Burmese
+// ===============================
+// VOICE ENGINE
+// ===============================
+
 function speakWeather() {
-    if (!weatherData) {
-        alert("Weather အချက်အလက် ရယူနေဆဲပါ။");
+    if (!weatherLoaded || !speechMessage) {
+        showStatus("Weather ရယူနေဆဲပါ");
         return;
     }
 
-    if (!("speechSynthesis" in window)) {
-        alert("ဒီ Browser မှာ Text to Speech မရပါ။");
+    if (!window.speechSynthesis) {
+        showStatus("ဒီ Browser မှာ Voice အသုံးပြုလို့မရပါ");
         return;
     }
 
     window.speechSynthesis.cancel();
 
-    const text = document.getElementById("speechText").textContent;
+    const utterance = new SpeechSynthesisUtterance(speechMessage);
 
-    currentSpeech = new SpeechSynthesisUtterance(text);
-
-    currentSpeech.lang = "my-MM";
-    currentSpeech.rate = 0.88;
-    currentSpeech.pitch = 1;
-    currentSpeech.volume = 1;
+    utterance.lang = "my-MM";
+    utterance.rate = 0.88;
+    utterance.pitch = 1;
+    utterance.volume = 1;
 
     const voices = window.speechSynthesis.getVoices();
 
@@ -329,20 +355,102 @@ function speakWeather() {
     );
 
     if (myanmarVoice) {
-        currentSpeech.voice = myanmarVoice;
+        utterance.voice = myanmarVoice;
     }
 
-    window.speechSynthesis.speak(currentSpeech);
+    utterance.onstart = () => {
+        showStatus("မနက်ခင်း Weather ကို ပြောနေပါသည်...");
+    };
+
+    utterance.onend = () => {
+        showStatus("Weather အသံပြီးဆုံးပါပြီ");
+    };
+
+    utterance.onerror = event => {
+        console.log("Speech error:", event);
+        showStatus("အသံဖွင့်ရန် တစ်ချက်နှိပ်ပေးပါ");
+    };
+
+    window.speechSynthesis.speak(utterance);
 }
 
-// Stop speech
-function stopSpeech() {
-    if ("speechSynthesis" in window) {
+// ===============================
+// AUTOPLAY ATTEMPT
+// ===============================
+
+function tryAutoSpeak() {
+    if (!weatherLoaded || !speechMessage) return;
+
+    if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
     }
+
+    speakWeather();
 }
 
-// Button events
+// ===============================
+// AUTOPLAY FALLBACK
+// ===============================
+
+// If browser blocks autoplay, the first interaction
+// anywhere on the page will start the voice.
+
+function unlockVoice() {
+    if (speechUnlocked) return;
+
+    speechUnlocked = true;
+
+    if (weatherLoaded && speechMessage) {
+        speakWeather();
+    }
+}
+
+document.addEventListener("click", event => {
+    if (
+        event.target.closest("#speakBtn") ||
+        event.target.closest("#stopBtn") ||
+        event.target.closest("#searchBtn") ||
+        event.target.closest("#gpsBtn")
+    ) {
+        return;
+    }
+
+    unlockVoice();
+}, { once: true });
+
+document.addEventListener("keydown", () => {
+    if (!speechUnlocked && weatherLoaded) {
+        unlockVoice();
+    }
+}, { once: true });
+
+// ===============================
+// STOP VOICE
+// ===============================
+
+function stopSpeech() {
+    if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        showStatus("အသံရပ်လိုက်ပါပြီ");
+    }
+}
+
+// ===============================
+// STATUS
+// ===============================
+
+function showStatus(message) {
+    const updated = document.getElementById("updated");
+
+    if (updated) {
+        updated.textContent = message;
+    }
+}
+
+// ===============================
+// BUTTONS
+// ===============================
+
 document.getElementById("speakBtn").addEventListener(
     "click",
     speakWeather
@@ -365,17 +473,24 @@ document.getElementById("gpsBtn").addEventListener(
 
 document.getElementById("cityInput").addEventListener(
     "keydown",
-    (event) => {
+    event => {
         if (event.key === "Enter") {
             searchCity();
         }
     }
 );
 
-// Start application
+// ===============================
+// START
+// ===============================
+
 window.addEventListener("load", () => {
-    if ("speechSynthesis" in window) {
+    if (window.speechSynthesis) {
         window.speechSynthesis.getVoices();
+
+        window.speechSynthesis.onvoiceschanged = () => {
+            window.speechSynthesis.getVoices();
+        };
     }
 
     getLocation();
